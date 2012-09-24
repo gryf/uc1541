@@ -7,6 +7,8 @@ VIC20/C64/C128. It requires the utility c1541 that comes bundled with Vice,
 the emulator for the VIC20, C64, C128 and other computers made by Commodore.
 
 Changelog:
+    2.2 Fixed bug(?) with unusual sector end (marked as sector 0, not 255),
+        causing endless directory reading on random locations.
     2.1 Fixed bug with filenames containing slash.
     2.0 Added reading raw D64 image, and mapping for jokers. Now it is
         possible to read files with PET-ASCII/control sequences in filenames.
@@ -21,8 +23,8 @@ Changelog:
     1.0 Initial release
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2012-09-04
-Version: 2.1
+Date: 2012-09-21
+Version: 2.2
 Licence: BSD
 """
 
@@ -118,16 +120,13 @@ class D64(object):
         """
 
         filename = list()
-        in_fname = True
 
         for chr_ in string:
-            character = D64.CHAR_MAP.get(ord(chr_), '?')
+            if ord(chr_) == 160:  # shift+space character; $a0
+                break
 
-            if in_fname:
-                if ord(chr_) == 160:
-                    in_fname = False
-                else:
-                    filename.append(character)
+            character = D64.CHAR_MAP.get(ord(chr_), '?')
+            filename.append(character)
 
         LOG.debug("string: ``%s'' mapped to: ``%s''", string,
                   "".join(filename))
@@ -139,7 +138,7 @@ class D64(object):
         Return False if the chain ends, True otherwise
         """
 
-        if self.next_track == 0 and self.next_sector == 255:
+        if self.next_track == 0 and self.next_sector in (0, 255):
             LOG.debug("End of directory")
             return False
 

@@ -7,6 +7,7 @@ VIC20/C64/C128. It requires the utility c1541 that comes bundled with Vice,
 the emulator for the VIC20, C64, C128 and other computers made by Commodore.
 
 Changelog:
+    2.1 Fixed bug with filenames containing slash.
     2.0 Added reading raw D64 image, and mapping for jokers. Now it is
         possible to read files with PET-ASCII/control sequences in filenames.
         Working with d64 images only. Added workaround for space at the
@@ -20,8 +21,8 @@ Changelog:
     1.0 Initial release
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2012-09-02
-Version: 2.0
+Date: 2012-09-04
+Version: 2.1
 Licence: BSD
 """
 
@@ -348,11 +349,11 @@ class Uc1541(object):
                 display_name = ".".join([fname, ext])
                 pattern_name = self.pyd64[idx]['fname']
 
-                if '/' in fname:
-                    display_name = fname.replace('/', '|')
+                if '/' in display_name:
+                    display_name = display_name.replace('/', '|')
 
                 # workaround for space at the beggining of the filename
-                if fname[0] == ' ':
+                if display_name[0] == ' ':
                     display_name = '~' + display_name[1:]
 
                 if ext == 'del':

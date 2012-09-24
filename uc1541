@@ -1,0 +1,169 @@
+#! /usr/bin/env python
+"""
+UC1541 Virtual filesystem
+
+This extfs provides an access to disk image files for the Commodore
+VIC20/C64/C128. It requires the utility c1541 that comes bundled with Vice,
+the emulator for the VIC20, C64, C128 and other computers made by Commodore.
+
+Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
+Date: 2012-08-07
+Version: 1.0
+Licence: BSD
+"""
+
+import sys
+import re
+import os
+from subprocess import Popen, PIPE
+from argparse import ArgumentParser
+
+
+class Uc1541(object):
+    """
+    Class for interact with c1541 program and MC
+    """
+    PRG = re.compile(r'(\d+)\s+"([^"]*)".+?\s(del|prg)([\s<])')
+
+    def __init__(self, archname):
+        self.arch = archname
+        self.out = ''
+        self.err = ''
+
+    def list(self):
+        """
+        List contents of D64 image.
+        Convert filenames to be unix filesystem friendly
+        Add suffix to show user what kind of file do he dealing with.
+        """
+        if not self._call_command('list'):
+            return self._show_error()
+
+        for line in self.out.split("\n"):
+            if Uc1541.PRG.match(line):
+                blocks, fname, ext, rw = Uc1541.PRG.match(line).groups()
+
+                if '/' in fname:
+                    fname = fname.replace('/', '\\')
+
+                rw = rw.strip() and "-" or "w"
+
+                #fname = ".".join([fname, ext])
+                sys.stdout.write("-r%s-r--r--   1 %-8d %-8d %8d Jan 01 1980"
+                                 " %s\n" % (rw, os.getuid(), os.getgid(),
+                                            int(blocks) * 256, fname))
+        return 0
+
+    def rm(self, dst):
+        """
+        Remove file from D64 image
+        """
+        dst = self._correct_fname(dst)
+        if not self._call_command('delete', dst=dst):
+            return self._show_error()
+
+        # In case of error during removing, ERRORCODE is sent to stdout
+        # instead of stderr AND 'ERRORCODE 1' means: # 'everything fine'
+        if '\nERRORCODE 1\n' in self.out:
+            return 0
+
+        sys.exit(self.out)
+
+    def copyin(self, dst, src):
+        """
+        Copy file to the D64 image. Destination filename has to be corrected.
+        """
+        dst = self._correct_fname(dst)
+
+        if not self._call_command('write', src=src, dst=dst):
+            return self._show_error()
+
+        return 0
+
+    def copyout(self, src, dst):
+        """
+        Copy file form the D64 image. Source filename has to be corrected,
+        since it's representaion differ from the real one inside D64 image.
+        """
+        src = self._correct_fname(src)
+
+        if not self._call_command('read', src=src, dst=dst):
+            return self._show_error()
+
+        return 0
+
+    def _correct_fname(self, fname):
+        """
+        Correct filenames containing backslashes (since in unices slash in
+        filenames is forbidden, and on PET ASCII there is no backslash, but
+        slash in filenames is accepted) and make it into slash. Also remove
+        .del/.prg suffix, since destination, correct file will always be prg.
+        """
+        if "\\" in fname:
+            fname = fname.replace('\\', '/')
+
+        #if fname.lower().endswith('.prg') or fname.lower().endswith('.del'):
+        #    fname = fname[:-4]
+
+        return fname
+
+    def _show_error(self):
+        """
+        Pass out error output from c1541 execution
+        """
+        sys.exit(self.err)
+
+    def _call_command(self, cmd, src=None, dst=None):
+        """
+        Return status of the provided command, which can be one of:
+            write
+            read
+            delete
+            dir/list
+        """
+        command = ['c1541', '-attach', self.arch, '-%s' % cmd]
+        if src and dst:
+            command.append(src)
+            command.append(dst)
+        elif src or dst:
+            command.append(src and src or dst)
+
+        self.out, self.err = Popen(command, stdout=PIPE,
+                                   stderr=PIPE).communicate()
+        return not self.err
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    subparsers = parser.add_subparsers(help='supported commands')
+    parser_list = subparsers.add_parser('list', help="List contents of D64 "
+                                        "image")
+    parser_copyin = subparsers.add_parser('copyin', help="Copy file into D64 "
+                                          "image")
+    parser_copyout = subparsers.add_parser('copyout', help="Copy file out of "
+                                           "D64 image")
+    parser_rm = subparsers.add_parser('rm', help="Delete file from D64 image")
+
+    parser_list.add_argument('ARCH', help="D64 Image filename")
+    parser_list.set_defaults(func=lambda a: Uc1541(a.ARCH).list())
+
+    parser_copyin.add_argument('ARCH', help="D64 Image filename")
+    parser_copyin.add_argument('SRC', help="Source filename")
+    parser_copyin.add_argument('DST', help="Destination filename (to be "
+                               "written into D64 image)")
+    parser_copyin.set_defaults(func=lambda a: Uc1541(a.ARCH). \
+            copyin(a.SRC, a.DST))
+
+    parser_copyout.add_argument('ARCH', help="D64 Image filename")
+    parser_copyout.add_argument('SRC', help="Source filename (to be read from"
+                                " D64 image")
+    parser_copyout.add_argument('DST', help="Destination filename")
+    parser_copyout.set_defaults(func=lambda a: Uc1541(a.ARCH). \
+            copyout(a.SRC, a.DST))
+
+    parser_rm.add_argument('ARCH', help="D64 Image filename")
+    parser_rm.add_argument('DST', help="File inside D64 image to be deleted")
+    parser_rm.set_defaults(func=lambda a: Uc1541(a.ARCH).rm(a.DST))
+
+    args = parser.parse_args()
+    args.func(args)

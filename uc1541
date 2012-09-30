@@ -50,6 +50,8 @@ of error cause if any.
 UC1541_HIDE_DEL - if set, no DEL entries will be shown
 
 Changelog:
+    2.4 Fixed endless loop bug for reading directory in Python implemented
+        directory reader.
     2.3 Re added and missing method _correct_fname used for writing files
         into d64 image.
     2.2 Fixed bug(?) with unusual sector end (marked as sector 0, not 255),
@@ -68,8 +70,8 @@ Changelog:
     1.0 Initial release
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2012-09-24
-Version: 2.3
+Date: 2012-09-30
+Version: 2.4
 Licence: BSD
 """
 
@@ -156,6 +158,7 @@ class D64(object):
         self.next_sector = 0
         self.next_track = None
         self._dir_contents = []
+        self._already_done = []
 
     def _map_filename(self, string):
         """
@@ -182,7 +185,11 @@ class D64(object):
         Return False if the chain ends, True otherwise
         """
 
-        if self.next_track == 0 and self.next_sector in (0, 255):
+        # Well, self.next_sector _should_ have value $FF, but apparently there
+        # are the cases where it is not, therefore checking for that will not
+        # be performed and value of $00 on the next track will end the
+        # directory
+        if self.next_track == 0:
             LOG.debug("End of directory")
             return False
 
@@ -198,6 +205,15 @@ class D64(object):
 
         self.next_track = ord(self.current_sector_data[0])
         self.next_sector = ord(self.current_sector_data[1])
+
+        if (self.next_track, self.next_sector) in self._already_done:
+            # Just a failsafe. Endless loop is not what is expected.
+            LOG.debug("Loop in track/sector pointer at %d,%d",
+                      self.next_track, self.next_sector)
+            self._already_done = []
+            return False
+
+        self._already_done.append((self.next_track, self.next_sector))
         LOG.debug("Next track: %s,%s", self.next_track, self.next_sector)
         return True
 

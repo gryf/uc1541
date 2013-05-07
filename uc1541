@@ -50,6 +50,8 @@ of error cause if any.
 UC1541_HIDE_DEL - if set, no DEL entries will be shown
 
 Changelog:
+    2.6 Added mkdir and run handling (or rather lack of handling :). Minor
+        refactoring.
     2.5 Fixed bug with filenames started with a '-' sign.
     2.4 Fixed endless loop bug for reading directory in Python implemented
         directory reader.
@@ -71,7 +73,7 @@ Changelog:
     1.0 Initial release
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2012-10-15
+Date: 2013-05-06
 Version: 2.5
 Licence: BSD
 """
@@ -260,7 +262,7 @@ class D64(object):
         Traverse through sectors and store entries in _dir_contents
         """
         sector = self.current_sector_data
-        for x in range(8):
+        for dummy in range(8):
             entry = sector[:32]
             ftype = ord(entry[2])
 
@@ -373,6 +375,16 @@ class Uc1541(object):
 
         return 0
 
+    def mkdir(self, dirname):
+        """Not supported"""
+        self.err = "D64 format doesn't support directories"
+        return self._show_error()
+
+    def run(self, fname):
+        """Not supported"""
+        self.err = "Not supported, unless you are using MC on real C64 ;)"
+        return self._show_error()
+
     def _correct_fname(self, fname):
         """
         Return filename with mapped characters, without .prg extension.
@@ -466,9 +478,9 @@ class Uc1541(object):
         Pass out error output from c1541 execution
         """
         if self._verbose:
-            sys.exit(self.err)
+            return self.err
         else:
-            sys.exit(1)
+            return 1
 
     def _call_command(self, cmd, src=None, dst=None):
         """
@@ -490,16 +502,16 @@ class Uc1541(object):
         return not self.err
 
 
-CALL_MAP = {'list': lambda a: Uc1541(a.ARCH).list(),
-            'copyin': lambda a: Uc1541(a.ARCH).copyin(a.SRC, a.DST),
-            'copyout': lambda a: Uc1541(a.ARCH).copyout(a.SRC, a.DST),
-            'rm': lambda a: Uc1541(a.ARCH).rm(a.DST)}
+CALL_MAP = {'list': lambda a: Uc1541(a.arch).list(),
+            'copyin': lambda a: Uc1541(a.arch).copyin(a.src, a.dst),
+            'copyout': lambda a: Uc1541(a.arch).copyout(a.src, a.dst),
+            'mkdir': lambda a: Uc1541(a.arch).mkdir(a.dst),
+            'rm': lambda a: Uc1541(a.arch).rm(a.dst),
+            'run': lambda a: Uc1541(a.arch).run(a.dst)}
 
 
 def parse_args():
-    """
-    Use ArgumentParser to check for script arguments and execute.
-    """
+    """Use ArgumentParser to check for script arguments and execute."""
     parser = ArgumentParser()
     subparsers = parser.add_subparsers(help='supported commands')
     parser_list = subparsers.add_parser('list', help="List contents of D64 "
@@ -509,67 +521,79 @@ def parse_args():
     parser_copyout = subparsers.add_parser('copyout', help="Copy file out of "
                                            "D64 image")
     parser_rm = subparsers.add_parser('rm', help="Delete file from D64 image")
+    parser_mkdir = subparsers.add_parser('mkdir', help="Create directory in "
+                                         "archive")
+    parser_run = subparsers.add_parser('run', help="Execute archived file")
 
-    parser_list.add_argument('ARCH', help="D64 Image filename")
+    parser_list.add_argument('arch', help="D64 Image filename")
     parser_list.set_defaults(func=CALL_MAP['list'])
 
-    parser_copyin.add_argument('ARCH', help="D64 Image filename")
-    parser_copyin.add_argument('SRC', help="Source filename")
-    parser_copyin.add_argument('DST', help="Destination filename (to be "
+    parser_copyin.add_argument('arch', help="D64 Image filename")
+    parser_copyin.add_argument('src', help="Source filename")
+    parser_copyin.add_argument('dst', help="Destination filename (to be "
                                "written into D64 image)")
     parser_copyin.set_defaults(func=CALL_MAP['copyin'])
 
-    parser_copyout.add_argument('ARCH', help="D64 Image filename")
-    parser_copyout.add_argument('SRC', help="Source filename (to be read from"
+    parser_copyout.add_argument('arch', help="D64 Image filename")
+    parser_copyout.add_argument('src', help="Source filename (to be read from"
                                 " D64 image")
-    parser_copyout.add_argument('DST', help="Destination filename")
+    parser_copyout.add_argument('dst', help="Destination filename")
     parser_copyout.set_defaults(func=CALL_MAP['copyout'])
 
-    parser_rm.add_argument('ARCH', help="D64 Image filename")
-    parser_rm.add_argument('DST', help="File inside D64 image to be deleted")
+    parser_rm.add_argument('arch', help="D64 Image filename")
+    parser_rm.add_argument('dst', help="File inside D64 image to be deleted")
     parser_rm.set_defaults(func=CALL_MAP['rm'])
+
+    parser_mkdir.add_argument('arch', help="archive filename")
+    parser_mkdir.add_argument('dst', help="Directory name inside archive to "
+                              "be created")
+    parser_mkdir.set_defaults(func=CALL_MAP['mkdir'])
+
+    parser_run.add_argument('arch', help="archive filename")
+    parser_run.add_argument('dst', help="File to be executed")
+    parser_run.set_defaults(func=CALL_MAP['run'])
 
     args = parser.parse_args()
     return args.func(args)
 
 
 def no_parse():
-    """
-    Failsafe argument "parsing". Note, that it blindly takes positional
+    """Failsafe argument "parsing". Note, that it blindly takes positional
     arguments without checking them. In case of wrong arguments it will
-    silently exit
-    """
+    silently exit"""
     try:
-        if sys.argv[1] not in ('list', 'copyin', 'copyout', 'rm'):
+        if sys.argv[1] not in ('list', 'copyin', 'copyout', 'rm', 'mkdir',
+                               "run"):
             sys.exit(2)
     except IndexError:
         sys.exit(2)
 
     class Arg(object):
-        DST = None
-        SRC = None
-        ARCH = None
+        """Mimic argparse object"""
+        dst = None
+        src = None
+        arch = None
 
     arg = Arg()
 
     try:
-        arg.ARCH = sys.argv[2]
+        arg.arch = sys.argv[2]
         if sys.argv[1] in ('copyin', 'copyout'):
-            arg.SRC = sys.argv[3]
-            arg.DST = sys.argv[4]
-        elif sys.argv[1] == 'rm':
-            arg.DST = sys.argv[3]
+            arg.src = sys.argv[3]
+            arg.dst = sys.argv[4]
+        elif sys.argv[1] in ('rm', 'run', 'mkdir'):
+            arg.dst = sys.argv[3]
     except IndexError:
         sys.exit(2)
 
-    CALL_MAP[sys.argv[1]](arg)
+    return CALL_MAP[sys.argv[1]](arg)
 
 if __name__ == "__main__":
     LOG.debug("Script params: %s", str(sys.argv))
     try:
         from argparse import ArgumentParser
-        parse_func = parse_args
+        PARSE_FUNC = parse_args
     except ImportError:
-        parse_func = no_parse
+        PARSE_FUNC = no_parse
 
-    parse_func()
+    sys.exit(PARSE_FUNC())

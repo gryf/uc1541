@@ -43,13 +43,14 @@ script behaviour:
 
 UC1541_DEBUG - if set, uc1541 will produce log in /tmp/uc1541.log file
 
-UC1541_VERBOSE - of set, script will be more verbose, i.e. error messages form
+UC1541_VERBOSE - if set, script will be more verbose, i.e. error messages form
 c1541 program will be passed to Midnight Commander, so that user will be aware
 of error cause if any.
 
 UC1541_HIDE_DEL - if set, no DEL entries will be shown
 
 Changelog:
+    2.7 Added support for gzipped disk images
     2.6 Added mkdir and run handling (or rather lack of handling :). Minor
         refactoring.
     2.5 Fixed bug with filenames started with a '-' sign.
@@ -73,14 +74,15 @@ Changelog:
     1.0 Initial release
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2013-05-06
-Version: 2.6
+Date: 2013-11-12
+Version: 2.7
 Licence: BSD
 """
 
 import sys
 import re
 import os
+import gzip
 from subprocess import Popen, PIPE
 
 if os.getenv('UC1541_DEBUG'):
@@ -96,7 +98,7 @@ if os.getenv('UC1541_DEBUG'):
 else:
     class LOG(object):
         """
-        Dummy logger object. does nothing.
+        Dummy logger object. Does nothing.
         """
         @classmethod
         def debug(*args, **kwargs):
@@ -153,15 +155,30 @@ class D64(object):
         Init
         """
         LOG.debug('image: %s', dimage)
-        dimage = open(dimage, 'rb')
-        self.raw = dimage.read()
-        dimage.close()
-
+        self.raw = None
         self.current_sector_data = None
         self.next_sector = 0
         self.next_track = None
         self._dir_contents = []
         self._already_done = []
+
+        self._get_raw(dimage)
+
+    def _get_raw(self, dimage):
+        """Try to get contents of the D64 image either it's gzip compressed or
+        not."""
+        fobj = gzip.open(dimage)
+        # Although the common approach with gzipped files is to check the
+        # magic number, in this case there is no guarantee that first track
+        # does not contain exactly the same byte sequence as the magic number.
+        # So the only way left is to actually try to uncompress the file.
+        try:
+            self.raw = fobj.read()
+        except IOError:
+            fobj.close()
+            fobj = open(dimage)
+            self.raw = fobj.read()
+            fobj.close()
 
     def _map_filename(self, string):
         """

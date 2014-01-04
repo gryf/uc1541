@@ -50,6 +50,7 @@ of error cause if any.
 UC1541_HIDE_DEL - if set, no DEL entries will be shown
 
 Changelog:
+    2.8 Treat non standard discs a bit better
     2.7 Added support for gzipped disk images
     2.6 Added mkdir and run handling (or rather lack of handling :). Minor
         refactoring.
@@ -74,8 +75,8 @@ Changelog:
     1.0 Initial release
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2013-11-12
-Version: 2.7
+Date: 2014-01-04
+Version: 2.8
 Licence: BSD
 """
 
@@ -227,6 +228,11 @@ class D64(object):
 
         self.current_sector_data = self.raw[offset:offset + 256]
 
+        # Guard for reading data out of bound - that happened for discs which
+        # store only raw data, even on 18 track
+        if not self.current_sector_data:
+            return False
+
         self.next_track = ord(self.current_sector_data[0])
         self.next_sector = ord(self.current_sector_data[1])
 
@@ -338,6 +344,11 @@ class Uc1541(object):
         """
         LOG.info("List contents of %s", self.arch)
         directory = self._get_dir()
+
+        # If there is an error reading directory, show the reason to the user
+        if self.out.startswith("Error"):
+            sys.stderr.write(self.out.split("\n")[0] + "\n")
+            return 2
 
         for entry in directory:
             sys.stdout.write("%(perms)s   1 %(uid)-8d %(gid)-8d %(size)8d "
@@ -508,11 +519,10 @@ class Uc1541(object):
             dir/list
         """
         command = ['c1541', '-attach', self.arch, '-%s' % cmd]
-        if src and dst:
+        if src:
             command.append(src)
+        if dst:
             command.append(dst)
-        elif src or dst:
-            command.append(src and src or dst)
 
         self.out, self.err = Popen(command, stdout=PIPE,
                                    stderr=PIPE).communicate()

@@ -46,6 +46,14 @@ copied file without extension it stays there in such form, till next access
 (after flushing VFS). Also file sizes are not accurate, since D64 directory
 entries have sizes stored as 256 bytes blocks.
 
+Screens below shows how it looks like on real C64 machine and its representation
+on Midnight Commander listing.
+
+|image1| |image2|
+
+In ``media`` directory you can find the ``test.d6z`` gzip compressed D64 image
+file.
+
 Rquirements
 ===========
 
@@ -109,3 +117,6 @@ License
 
 This software is licensed under 3-clause BSD license. See LICENSE file for
 details.
+
+.. |image1| image:: /media/vice_dir.png?raw=true
+.. |image2| image:: /media/mc.png?raw=true

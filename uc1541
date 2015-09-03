@@ -2,31 +2,6 @@
 """
 UC1541 Virtual filesystem
 
-Changelog:
-    2.8 Treat non standard discs a bit better
-    2.7 Added support for gzipped disk images
-    2.6 Added mkdir and run handling (or rather lack of handling :). Minor
-        refactoring.
-    2.5 Fixed bug with filenames started with a '-' sign.
-    2.4 Fixed endless loop bug for reading directory in Python implemented
-        directory reader.
-    2.3 Re added and missing method _correct_fname used for writing files
-        into d64 image.
-    2.2 Fixed bug(?) with unusual sector end (marked as sector 0, not 255),
-        causing endless directory reading on random locations.
-    2.1 Fixed bug with filenames containing slash.
-    2.0 Added reading raw D64 image, and mapping for jokers. Now it is
-        possible to read files with PET-ASCII/control sequences in filenames.
-        Working with d64 images only. Added workaround for space at the
-        beggining of the filename.
-    1.2 Added configuration env variables: UC1541_VERBOSE and UC1541_HIDE_DEL.
-        First one, if set to any value, will cause that error messages from
-        c1541 program will be redirected as a failure messages visible in MC.
-        The other variable, when set to any value, cause "del" entries to be
-        not shown in the lister.
-    1.1 Added protect bits, added failsafe for argparse module
-    1.0 Initial release
-
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
 Date: 2014-01-04
 Version: 2.8

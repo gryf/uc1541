@@ -6,6 +6,8 @@ Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
 Date: 2014-01-04
 Version: 2.8
 Licence: BSD
+source: https://bitbucket.org/gryf/uc1541
+mirror: https://github.com/gryf/uc1541
 """
 
 import sys

@@ -101,7 +101,7 @@ Changelog
 * **2.1** Fixed bug with filenames containing slash.
 * **2.0** Added reading raw D64 image, and mapping for jokers. Now it is
   possible to read files with PET-ASCII/control sequences in filenames. Working
-  with d64 images only. Added workaround for space at the beggining of the
+  with d64 images only. Added workaround for space at the beginning of the
   filename.
 * **1.2** Added configuration env variables: ``UC1541_VERBOSE`` and
   ``UC1541_HIDE_DEL``.  First one, if set to any value, will cause that error

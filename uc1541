@@ -3,8 +3,8 @@
 UC1541 Virtual filesystem
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2014-01-04
-Version: 2.8
+Date: 2018-02-13
+Version: 3.0
 Licence: BSD
 source: https://bitbucket.org/gryf/uc1541
 mirror: https://github.com/gryf/uc1541
@@ -50,6 +50,18 @@ else:
         @classmethod
         def critical(*args, **kwargs):
             pass
+
+
+def _ord(string_or_int):
+    """
+    Return an int value for the (possible) string passed in argument. This
+    function is for compatibility between python2 and python3, where single
+    element in byte string array is a string or an int respectively.
+    """
+    try:
+        return ord(string_or_int)
+    except TypeError:
+        return string_or_int
 
 
 class D64(object):
@@ -98,16 +110,16 @@ class D64(object):
     def _get_raw(self, dimage):
         """Try to get contents of the D64 image either it's gzip compressed or
         not."""
-        fobj = gzip.open(dimage)
+        fobj = gzip.open(dimage, 'rb')
         # Although the common approach with gzipped files is to check the
         # magic number, in this case there is no guarantee that first track
         # does not contain exactly the same byte sequence as the magic number.
         # So the only way left is to actually try to uncompress the file.
         try:
             self.raw = fobj.read()
-        except IOError:
+        except (IOError, OSError):
             fobj.close()
-            fobj = open(dimage)
+            fobj = open(dimage, 'rb')
             self.raw = fobj.read()
             fobj.close()
 
@@ -120,10 +132,10 @@ class D64(object):
         filename = list()
 
         for chr_ in string:
-            if ord(chr_) == 160:  # shift+space character; $a0
+            if _ord(chr_) == 160:  # shift+space character; $a0
                 break
 
-            character = D64.CHAR_MAP.get(ord(chr_), '?')
+            character = D64.CHAR_MAP.get(_ord(chr_), '?')
             filename.append(character)
 
         # special cases
@@ -163,8 +175,8 @@ class D64(object):
         if not self.current_sector_data:
             return False
 
-        self.next_track = ord(self.current_sector_data[0])
-        self.next_sector = ord(self.current_sector_data[1])
+        self.next_track = _ord(self.current_sector_data[0])
+        self.next_sector = _ord(self.current_sector_data[1])
 
         if (self.next_track, self.next_sector) in self._already_done:
             # Just a failsafe. Endless loop is not what is expected.
@@ -217,7 +229,7 @@ class D64(object):
         sector = self.current_sector_data
         for dummy in range(8):
             entry = sector[:32]
-            ftype = ord(entry[2])
+            ftype = _ord(entry[2])
 
             if ftype == 0:  # deleted
                 sector = sector[32:]
@@ -225,12 +237,12 @@ class D64(object):
 
             type_verbose = self._get_ftype(ftype)
 
-            protect = ord(entry[2]) & 64 and "<" or " "
+            protect = _ord(entry[2]) & 64 and "<" or " "
             fname = entry[5:21]
             if ftype == 'rel':
-                size = ord(entry[23])
+                size = _ord(entry[23])
             else:
-                size = ord(entry[30]) + ord(entry[31]) * 226
+                size = _ord(entry[30]) + _ord(entry[31]) * 226
 
             self._dir_contents.append({'fname': self._map_filename(fname),
                                        'ftype': type_verbose,
@@ -454,8 +466,15 @@ class Uc1541(object):
         if dst:
             command.append(dst)
 
-        self.out, self.err = Popen(command, stdout=PIPE,
-                                   stderr=PIPE).communicate()
+        LOG.debug('executing command: %s', ' '.join(command))
+        # For some reason using write command and reading output confuses
+        # Python3 beneath MC and as a consequence MC report an error...
+        # therefore for write command let's not use universal_newlines...
+        self.out, self.err = Popen(command,
+                                   universal_newlines=(cmd != 'write'),
+                                   stdout=PIPE, stderr=PIPE).communicate()
+
+        LOG.debug('an err: %s', self.err)
         return not self.err
 
 

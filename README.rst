@@ -87,6 +87,7 @@ script behaviour:
 Changelog
 =========
 
+* **3.0** Added beta quality Python3 support
 * **2.8** Treat non standard discs a bit better
 * **2.7** Added support for gzipped disk images
 * **2.6** Added mkdir and run handling (or rather lack of handling :). Minor

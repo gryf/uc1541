@@ -64,9 +64,51 @@ def _ord(string_or_int):
         return string_or_int
 
 
-class D64(object):
+def _get_raw(dimage):
+    """Try to get contents of the D64 image either it's gzip compressed or
+    not."""
+    raw = None
+    with gzip.open(dimage, 'rb') as fobj:
+        # Although the common approach with gzipped files is to check the
+        # magic number, in this case there is no guarantee that first track
+        # does not contain exactly the same byte sequence as the magic number.
+        # So the only way left is to actually try to uncompress the file.
+        try:
+            raw = fobj.read()
+        except (IOError, OSError):
+            pass
+    if not raw:
+        with open(dimage, 'rb') as fobj:
+            raw = fobj.read()
+
+    return raw
+
+
+def _get_implementation(disk):
     """
-    Implement d64 directory reader
+    Check the file under fname and return right class for creating an object
+    corresponding for the file
+    """
+    len_map = {822400: 'D81',
+               349696: 'D71',  # 70 tracks
+               351062: 'D71',  # 70 tracks, 1366 error bytes
+               174848: D64,  # usual d64 disc image, 35 tracks, no errors
+               175531: D64,  # 35 track, 683 error bytes
+               196608: D64,  # 40 track, no errors
+               197376: D64,  # 40 track, 768 error bytes
+              }
+
+    raw = _get_raw(fname)
+
+    if disk[:32].startswith('C64'):
+        return  # T64
+
+    return len_map.get(len(disk))(disk)
+
+
+class Disk(object):
+    """
+    Represent common disk interface
     """
     CHAR_MAP = {32: ' ', 33: '!', 34: '"', 35: '#', 37: '%', 38: '&', 39: "'",
                 40: '(', 41: ')', 42: '*', 43: '+', 44: ',', 45: '-', 46: '.',
@@ -105,23 +147,6 @@ class D64(object):
         self._dir_contents = []
         self._already_done = []
 
-        self._get_raw(dimage)
-
-    def _get_raw(self, dimage):
-        """Try to get contents of the D64 image either it's gzip compressed or
-        not."""
-        fobj = gzip.open(dimage, 'rb')
-        # Although the common approach with gzipped files is to check the
-        # magic number, in this case there is no guarantee that first track
-        # does not contain exactly the same byte sequence as the magic number.
-        # So the only way left is to actually try to uncompress the file.
-        try:
-            self.raw = fobj.read()
-        except (IOError, OSError):
-            fobj.close()
-            fobj = open(dimage, 'rb')
-            self.raw = fobj.read()
-            fobj.close()
 
     def _map_filename(self, string):
         """
@@ -261,6 +286,10 @@ class D64(object):
         return self._dir_contents
 
 
+class D64(Disk):
+    pass
+
+
 class Uc1541(object):
     """
     Class for interact with c1541 program and MC
@@ -274,7 +303,7 @@ class Uc1541(object):
         self._verbose = os.getenv("UC1541_VERBOSE", False)
         self._hide_del = os.getenv("UC1541_HIDE_DEL", False)
 
-        self.pyd64 = D64(archname).list_dir()
+        self.dirlist = _get_implementation(_get_raw(archname)).list_dir()
         self.file_map = {}
         self.directory = []
 

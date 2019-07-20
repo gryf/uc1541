@@ -87,6 +87,8 @@ script behaviour:
 Changelog
 =========
 
+* **3.1** Argparse on Python3 have different behaviour, where if no subcommand
+  is provided, it will pass anyway. Fixed.
 * **3.0** Added beta quality Python3 support
 * **2.8** Treat non standard discs a bit better
 * **2.7** Added support for gzipped disk images

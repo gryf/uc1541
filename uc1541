@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 UC1541 Virtual filesystem
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2018-02-13
-Version: 3.0
+Date: 2019-07-20
+Version: 3.1
 Licence: BSD
 source: https://bitbucket.org/gryf/uc1541
 mirror: https://github.com/gryf/uc1541
@@ -489,7 +489,9 @@ CALL_MAP = {'list': lambda a: Uc1541(a.arch).list(),
 def parse_args():
     """Use ArgumentParser to check for script arguments and execute."""
     parser = ArgumentParser()
-    subparsers = parser.add_subparsers(help='supported commands')
+    subparsers = parser.add_subparsers(help='supported commands',
+                                       dest='subcommand')
+    subparsers.required = True
     parser_list = subparsers.add_parser('list', help="List contents of D64 "
                                         "image")
     parser_copyin = subparsers.add_parser('copyin', help="Copy file into D64 "

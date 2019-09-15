@@ -57,7 +57,7 @@ file.
 Rquirements
 ===========
 
-* Python 2.7
+* Python 2.7 or Python 3.6 or higher
 * Vice installation (c1541 program in path)
 
 Installation
@@ -87,6 +87,7 @@ script behaviour:
 Changelog
 =========
 
+* **3.2** Changed shebang to ``python`` executable instead of ``python3``
 * **3.1** Argparse on Python3 have different behaviour, where if no subcommand
   is provided, it will pass anyway. Fixed.
 * **3.0** Added beta quality Python3 support

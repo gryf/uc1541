@@ -52,6 +52,9 @@ else:
             pass
 
 
+SECLEN = 256
+
+
 def _ord(string_or_int):
     """
     Return an int value for the (possible) string passed in argument. This
@@ -135,7 +138,10 @@ class Disk(object):
                   0b011: 'usr',
                   0b100: 'rel'}
 
-    def __init__(self, dimage):
+    OFFSET_MAP = {}
+    DIR_TRACK = 18
+
+    def __init__(self, raw):
         """
         Init
         """
@@ -187,13 +193,13 @@ class Disk(object):
 
         if self.next_track is None:
             LOG.debug("Going to the track: 18,1")
-            offset = self._get_d64_offset(18, 1)
+            offset = self._get_offset(self.DIR_TRACK, 1)
         else:
-            offset = self._get_d64_offset(self.next_track, self.next_sector)
+            offset = self._get_offset(self.next_track, self.next_sector)
             LOG.debug("Going to the track: %s,%s", self.next_track,
                       self.next_sector)
 
-        self.current_sector_data = self.raw[offset:offset + 256]
+        self.current_sector_data = self.raw[offset:offset + SECLEN]
 
         # Guard for reading data out of bound - that happened for discs which
         # store only raw data, even on 18 track
@@ -467,7 +473,7 @@ class Uc1541(object):
                                   'display_name': display_name,
                                   'uid': uid,
                                   'gid': gid,
-                                  'size': int(blocks) * 256,
+                                  'size': int(blocks) * SECLEN,
                                   'perms': perms})
                 idx += 1
         return directory
@@ -594,6 +600,7 @@ def no_parse():
         sys.exit(2)
 
     return CALL_MAP[sys.argv[1]](arg)
+
 
 if __name__ == "__main__":
     LOG.debug("Script params: %s", str(sys.argv))

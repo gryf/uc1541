@@ -11,16 +11,16 @@ Features
 ========
 
 * view, remove, copy files in and out of the image
-* support for read from and write to d64 images
+* support for read from and write to d64, d71 and d81 images
 * gzipped disk images support
 * onfly characters remapping (see below)
 
 Remarks
 =======
 
-Due to different way of representing file entries on regular D64 disk images,
-there could be issues with filenames that are transfered from/to the image.
-Following rules was applied to represent a single file entry:
+Due to different way of representing file entries on regular Commodore disk
+images, there could be issues with filenames that are transfered from/to the
+image. Following rules was applied to represent a single file entry:
 
 1. An extension is attached to the end of a filename depending on a file type.
    Possible extensions are: ``prg``, ``del``, ``seq``, ``usr`` and ``rel``.
@@ -30,7 +30,7 @@ Following rules was applied to represent a single file entry:
 3. Every slash character (``/``) will be replaced by pipe character (``|``).
 4. Leading space will be replaced by tilda (``~``).
 
-While copying from D64 image to filesystem, filenames will be stored as they
+While copying from disk image to filesystem, filenames will be stored as they
 are seen on a listing.
 
 While copying from filesystem to D64 image, filename conversion will be done:
@@ -43,8 +43,8 @@ While copying from filesystem to D64 image, filename conversion will be done:
 
 Representation of a directory can be sometimes confusing - in case when one
 copied file without extension it stays there in such form, till next access
-(after flushing VFS). Also file sizes are not accurate, since D64 directory
-entries have sizes stored as 256 bytes blocks.
+(after flushing VFS). Also file sizes are not accurate, since directory entries
+in CBM format have sizes stored as 256 bytes blocks.
 
 Screens below shows how it looks like on real C64 machine and its representation
 on Midnight Commander listing.
@@ -67,7 +67,7 @@ Installation
 * add or change entry for files handle in ``~/.config/mc/mc.ext``::
 
     # Disk images for Commodore computers (VIC20, C64, C128)
-    regex/\.(d64|D64|d6z|D6z|d6Z|D6Z)$
+    regex/\.([dD]64|[dD]6[zZ]|[dD]71|[dD]7[zZ]|[dD]81|[dD]8[zZ])$
         Open=%cd %p/uc1541://
         View=%view{ascii} c1541 %f -list
         Extract=c1541 %f -extract
@@ -87,6 +87,7 @@ script behaviour:
 Changelog
 =========
 
+* **3.3** Added support for .d71 and .d81 disk images.
 * **3.2** Changed shebang to ``python`` executable instead of ``python3``
 * **3.1** Argparse on Python3 have different behaviour, where if no subcommand
   is provided, it will pass anyway. Fixed.

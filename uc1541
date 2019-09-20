@@ -3,8 +3,8 @@
 UC1541 Virtual filesystem
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2019-09-15
-Version: 3.2
+Date: 2019-09-20
+Version: 3.3
 Licence: BSD
 source: https://bitbucket.org/gryf/uc1541
 mirror: https://github.com/gryf/uc1541
@@ -68,8 +68,9 @@ def _ord(string_or_int):
 
 
 def _get_raw(dimage):
-    """Try to get contents of the D64 image either it's gzip compressed or
-    not."""
+    """
+    Try to get contents of the D64 image either it's gzip compressed or not.
+    """
     raw = None
     with gzip.open(dimage, 'rb') as fobj:
         # Although the common approach with gzipped files is to check the
@@ -136,8 +137,8 @@ class Disk(object):
                   0b011: 'usr',
                   0b100: 'rel'}
 
-    OFFSET_MAP = {}
     DIR_TRACK = 18
+    DIR_SECTOR = 1
 
     def __init__(self, raw):
         """
@@ -188,8 +189,9 @@ class Disk(object):
             return False
 
         if self.next_track is None:
-            LOG.debug("Going to the track: 18,1")
-            offset = self._get_offset(self.DIR_TRACK, 1)
+            LOG.debug("Going to the track: %s, %s", self.DIR_TRACK,
+                      self.DIR_SECTOR)
+            offset = self._get_offset(self.DIR_TRACK, self.DIR_SECTOR)
         else:
             offset = self._get_offset(self.next_track, self.next_sector)
             LOG.debug("Going to the track: %s,%s", self.next_track,
@@ -198,7 +200,7 @@ class Disk(object):
         self.current_sector_data = self.raw[offset:offset + SECLEN]
 
         # Guard for reading data out of bound - that happened for discs which
-        # store only raw data, even on 18 track
+        # store only raw data, even on directory track
         if not self.current_sector_data:
             return False
 
@@ -367,6 +369,23 @@ class D81(Disk):
     """
     Implement d81 directory reader
     """
+    DIR_TRACK = 40
+    DIR_SECTOR = 3
+    FILE_TYPES = {0b000: 'del',
+                  0b001: 'seq',
+                  0b010: 'prg',
+                  0b011: 'usr',
+                  0b100: 'rel',
+                  0b101: 'cbm'}
+
+    def _get_offset(self, track, sector):
+        """
+        Return offset (in bytes) for specified track and sector. In d81 is
+        easy, since we have 80 tracks with 40 sectors for 256 bytes each.
+        """
+        # we wan to go to the beginning (first sector) of the track, not it's
+        # max, so that we need to extract its amount.
+        return (track * 40 - 40) * SECLEN + sector * SECLEN
 
 
 class Uc1541(object):

@@ -224,30 +224,11 @@ class Disk(object):
                                                   num & 2 and 1,
                                                   num & 1), 2), '???')
 
-    def _get_d64_offset(self, track, sector):
+    def _get_offset(self, track, sector):
         """
         Return offset (in bytes) for specified track and sector.
         """
-
-        offset = 0
-        truncate_track = 0
-
-        if track > 17:
-            offset = 17 * 21 * 256
-            truncate_track = 17
-
-        if track > 24:
-            offset += 6 * 19 * 256
-            truncate_track = 24
-
-        if track > 30:
-            offset += 5 * 18 * 256
-            truncate_track = 30
-
-        track = track - truncate_track
-        offset += track * sector * 256
-
-        return offset
+        return 0
 
     def _harvest_entries(self):
         """
@@ -292,6 +273,37 @@ class D64(Disk):
     """
     Implement d64 directory reader
     """
+
+    def _get_offset(self, track, sector):
+        """
+        Return offset (in bytes) for specified track and sector.
+
+        Track   Sectors/track   # Tracks
+        -----   -------------   ---------
+         1-17        21            17
+        18-24        19             7
+        25-30        18             6
+        31-40        17            10
+        """
+        offset = 0
+        truncate_track = 0
+
+        if track > 17:
+            offset = 17 * 21 * SECLEN
+            truncate_track = 17
+
+        if track > 24:
+            offset += 7 * 19 * SECLEN
+            truncate_track = 24
+
+        if track > 30:
+            offset += 6 * 18 * SECLEN
+            truncate_track = 30
+
+        track = track - truncate_track
+        offset += track * sector * SECLEN
+
+        return offset
 
 
 class D71(Disk):

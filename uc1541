@@ -102,7 +102,7 @@ def _get_implementation(disk):
                196608: D64,  # 40 track, no errors
                197376: D64}  # 40 track, 768 error bytes
 
-    if disk[:32].startswith('C64'):
+    if disk[:32].startswith(b'C64'):
         return  # T64
 
     return len_map.get(len(disk))(disk)
@@ -434,14 +434,6 @@ class Uc1541(object):
         if not self._call_command('delete', dst=dst):
             return self._show_error()
 
-        # During removing, a message containing ERRORCODE is sent to stdout
-        # instead of stderr. Everything other than 'ERRORCODE 1' (which means:
-        # 'everything fine') is actually a failure. In case of verbose error
-        # output it is needed to copy self.out to self.err.
-        if '\nERRORCODE 1\n' not in self.out:
-            self.err = self.out
-            return self._show_error()
-
         return 0
 
     def copyin(self, dst, src):
@@ -594,14 +586,19 @@ class Uc1541(object):
             command.append(dst)
 
         LOG.debug('executing command: %s', ' '.join(command))
-        # For some reason using write command and reading output confuses
-        # Python3 beneath MC and as a consequence MC report an error...
-        # therefore for write command let's not use universal_newlines...
+        # For some reason using write and delete commands and reading output
+        # confuses Python3 beneath MC and as a consequence MC report an
+        # error...therefore for those commands let's not use
+        # universal_newlines...
+        universal_newlines = True
+        if cmd in ['delete', 'write']:
+            universal_newlines = False
         self.out, self.err = Popen(command,
-                                   universal_newlines=(cmd != 'write'),
+                                   universal_newlines=universal_newlines,
                                    stdout=PIPE, stderr=PIPE).communicate()
 
-        LOG.debug('an err: %s', self.err)
+        if self.err:
+            LOG.debug('an err: %s', self.err)
         return not self.err
 
 

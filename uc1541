@@ -92,16 +92,14 @@ def _get_implementation(disk):
     Check the file under fname and return right class for creating an object
     corresponding for the file
     """
-    len_map = {822400: 'D81',
-               349696: 'D71',  # 70 tracks
-               351062: 'D71',  # 70 tracks, 1366 error bytes
+    len_map = {822400: D81,  # 80 tracks
+               819200: D81,  # 80 tracks, 3200 error bytes
+               349696: D71,  # 70 tracks
+               351062: D71,  # 70 tracks, 1366 error bytes
                174848: D64,  # usual d64 disc image, 35 tracks, no errors
                175531: D64,  # 35 track, 683 error bytes
                196608: D64,  # 40 track, no errors
-               197376: D64,  # 40 track, 768 error bytes
-              }
-
-    raw = _get_raw(fname)
+               197376: D64}  # 40 track, 768 error bytes
 
     if disk[:32].startswith('C64'):
         return  # T64
@@ -145,14 +143,12 @@ class Disk(object):
         """
         Init
         """
-        LOG.debug('image: %s', dimage)
-        self.raw = None
+        self.raw = raw
         self.current_sector_data = None
         self.next_sector = 0
         self.next_track = None
         self._dir_contents = []
         self._already_done = []
-
 
     def _map_filename(self, string):
         """
@@ -293,7 +289,21 @@ class Disk(object):
 
 
 class D64(Disk):
-    pass
+    """
+    Implement d64 directory reader
+    """
+
+
+class D71(Disk):
+    """
+    Implement d71 directory reader
+    """
+
+
+class D81(Disk):
+    """
+    Implement d81 directory reader
+    """
 
 
 class Uc1541(object):
@@ -451,7 +461,7 @@ class Uc1541(object):
                     continue
 
                 display_name = ".".join([fname, ext])
-                pattern_name = self.pyd64[idx]['fname']
+                pattern_name = self.dirlist[idx]['fname']
 
                 if '/' in display_name:
                     display_name = display_name.replace('/', '|')

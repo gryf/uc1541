@@ -1,5 +1,5 @@
 ===================================================
-Midnight Commander virtual filesystem for d64 files
+Midnight Commander virtual filesystem for C64 disks
 ===================================================
 
 This extfs provides an access to disk image files for the Commodore
@@ -10,10 +10,10 @@ made by Commodore.
 Features
 ========
 
-* view, remove, copy files in and out of the image
-* support for read from and write to d64, d71 and d81 images
-* gzipped disk images support
-* onfly characters remapping (see below)
+* View, remove, copy files in and out of the image,
+* Support for read from and write to d64, d71 and d81 images,
+* Gzipped disk images support,
+* On fly characters remapping (see below).
 
 Remarks
 =======
@@ -33,12 +33,12 @@ image. Following rules was applied to represent a single file entry:
 While copying from disk image to filesystem, filenames will be stored as they
 are seen on a listing.
 
-While copying from filesystem to D64 image, filename conversion will be done:
+While copying from filesystem to disk image, filename conversion will be done:
 
 1. Every ``$`` and ``*`` characters will be replaced by question mark (``?``)
 2. Every pipe (``|``) and backslash (``\``) characters will be replaced by
    slash (``/``)
-3. Every tilda (``~``) will be replaced by a space
+3. Every tilde (``~``) will be replaced by a space
 4. ``prg`` extension will be truncated
 
 Representation of a directory can be sometimes confusing - in case when one
@@ -87,6 +87,8 @@ script behaviour:
 Changelog
 =========
 
+* **3.4** Code cleanup. Removed dummy logger class and sys.args based argument
+  parsing.
 * **3.3** Added support for .d71 and .d81 disk images.
 * **3.2** Changed shebang to ``python`` executable instead of ``python3``
 * **3.1** Argparse on Python3 have different behaviour, where if no subcommand

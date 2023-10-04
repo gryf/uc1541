@@ -57,7 +57,7 @@ file.
 Rquirements
 ===========
 
-* Python 2.7 or Python 3.6 or higher
+* Python 3.6 or higher (checked recently with 3.11)
 * Vice installation (c1541 program in path)
 
 Installation
@@ -87,6 +87,7 @@ script behaviour:
 Changelog
 =========
 
+* **3.5** Drop Python2 support.
 * **3.4** Code cleanup. Removed dummy logger class and sys.args based argument
   parsing.
 * **3.3** Added support for .d71 and .d81 disk images.

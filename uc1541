@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 UC1541 Virtual filesystem
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
-Date: 2020-06-28
-Version: 3.4
+Date: 2023-10-04
+Version: 3.5
 Licence: BSD
 source: https://bitbucket.org/gryf/uc1541
 mirror: https://github.com/gryf/uc1541
@@ -30,18 +30,6 @@ if os.getenv('UC1541_DEBUG'):
 
 
 SECLEN = 256
-
-
-def _ord(string_or_int):
-    """
-    Return an int value for the (possible) string passed in argument. This
-    function is for compatibility between python2 and python3, where single
-    element in byte string array is a string or an int respectively.
-    """
-    try:
-        return ord(string_or_int)
-    except TypeError:
-        return string_or_int
 
 
 def _get_raw(dimage):
@@ -137,10 +125,10 @@ class Disk(object):
         filename = list()
 
         for chr_ in string:
-            if _ord(chr_) == 160:  # shift+space character; $a0
+            if chr_ == 160:  # shift+space character; $a0
                 break
 
-            character = D64.CHAR_MAP.get(_ord(chr_), '?')
+            character = D64.CHAR_MAP.get(chr_, '?')
             filename.append(character)
 
         # special cases
@@ -181,8 +169,8 @@ class Disk(object):
         if not self.current_sector_data:
             return False
 
-        self.next_track = _ord(self.current_sector_data[0])
-        self.next_sector = _ord(self.current_sector_data[1])
+        self.next_track = self.current_sector_data[0]
+        self.next_sector = self.current_sector_data[1]
 
         if (self.next_track, self.next_sector) in self._already_done:
             # Just a failsafe. Endless loop is not what is expected.
@@ -216,7 +204,7 @@ class Disk(object):
         sector = self.current_sector_data
         for dummy in range(8):
             entry = sector[:32]
-            ftype = _ord(entry[2])
+            ftype = entry[2]
 
             if ftype == 0:  # deleted
                 sector = sector[32:]
@@ -224,12 +212,12 @@ class Disk(object):
 
             type_verbose = self._get_ftype(ftype)
 
-            protect = _ord(entry[2]) & 64 and "<" or " "
+            protect = entry[2] & 64 and "<" or " "
             fname = entry[5:21]
             if ftype == 'rel':
-                size = _ord(entry[23])
+                size = entry[23]
             else:
-                size = _ord(entry[30]) + _ord(entry[31]) * 226
+                size = entry[30] + entry[31] * 226
 
             self._dir_contents.append({'fname': self._map_filename(fname),
                                        'ftype': type_verbose,

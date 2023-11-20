@@ -4,7 +4,7 @@ UC1541 Virtual filesystem
 
 Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
 Date: 2023-10-04
-Version: 3.5
+Version: 3.6
 Licence: BSD
 source: https://bitbucket.org/gryf/uc1541
 mirror: https://github.com/gryf/uc1541
@@ -357,7 +357,7 @@ class Uc1541(object):
     """
     Class for interact with c1541 program and MC
     """
-    PRG = re.compile(r'(\d+)\s+"([^"]*)".+?\s(del|prg|rel|seq|usr)([\s<])')
+    PRG = re.compile(r'(\d+)\s+"([^"]*)".+?(del|prg|rel|seq|usr)([\s<])')
 
     def __init__(self, archname):
         self.arch = archname

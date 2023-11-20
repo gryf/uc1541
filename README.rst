@@ -87,6 +87,7 @@ script behaviour:
 Changelog
 =========
 
+* **3.6** Fixed line matcher for directory entries.
 * **3.5** Drop Python2 support.
 * **3.4** Code cleanup. Removed dummy logger class and sys.args based argument
   parsing.

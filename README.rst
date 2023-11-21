@@ -64,13 +64,23 @@ Installation
 ============
 
 * copy ``uc1541`` to ``~/.local/share/mc/extfs.d/``
-* add or change entry for files handle in ``~/.config/mc/mc.ext``::
+* add or change entry for files handle in ``~/.config/mc/mc.ext``:
 
-    # Disk images for Commodore computers (VIC20, C64, C128)
-    regex/\.([dD]64|[dD]6[zZ]|[dD]71|[dD]7[zZ]|[dD]81|[dD]8[zZ])$
-        Open=%cd %p/uc1541://
-        View=%view{ascii} c1541 %f -list
-        Extract=c1541 %f -extract
+.. code:: ini
+
+   # Disk images for Commodore computers (VIC20, C64, C128)
+   [d64]
+   Regex=\.(d64|d71|d81)$
+   RegexIgnoreCase=true
+   Open=%cd %p/uc1541://
+   View=%view{ascii} c1541 %f -list
+
+   [d6z]
+   Regex=\.(d[678]z)$
+   RegexIgnoreCase=true
+   Open=%cd %p/uc1541://
+   View=%view{ascii} t=$(mktemp); zcat %f > ${t}; c1541 ${t} -list 2>/dev/null; rm ${t}
+   
 
 Configuration
 =============

@@ -6,7 +6,7 @@ Author: Roman 'gryf' Dobosz <gryf73@gmail.com>
 Date: 2023-10-04
 Version: 3.6
 Licence: BSD
-source: https://bitbucket.org/gryf/uc1541
+source: https://gihub.com/gryf/uc1541
 mirror: https://github.com/gryf/uc1541
 """
 import argparse
@@ -435,9 +435,9 @@ class Uc1541(object):
         program seem to have issues with it while writing, so it will also be
         replaced.
         """
+        # TODO: revisit those shitty mappings, when are which done.
         char_map = {'|': "/",
                     "\\": "/",
-                    "~": " ",
                     "$": "?",
                     "*": "?"}
 
@@ -495,13 +495,9 @@ class Uc1541(object):
                 if '/' in display_name:
                     display_name = display_name.replace('/', '|')
 
-                # workaround for space and dash at the beggining of the
-                # filename
-                char_map = {' ': '~',
-                            '-': '_'}
-                display_name = "".join([char_map.get(display_name[0],
-                                                     display_name[0]),
-                                        display_name[1:]])
+                # workaround for space at the beggining of the filename
+                if display_name.startswith(' '):
+                    display_name = '_' + display_name[1:]
 
                 if ext == 'del':
                     perms = "----------"
@@ -548,11 +544,15 @@ class Uc1541(object):
         universal_newlines = True
         if cmd in ['delete', 'write']:
             universal_newlines = False
-        (self.out,
-         self.err) = subprocess.Popen(command,
-                                      universal_newlines=universal_newlines,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE).communicate()
+        #(self.out,
+        # self.err) = subprocess.Popen(command,
+        #                              universal_newlines=universal_newlines,
+        #                              stdout=subprocess.PIPE,
+        #                              stderr=subprocess.PIPE).communicate()
+        out = subprocess.run(command, capture_output=True,
+                             universal_newlines=universal_newlines)
+
+        self.out, self.err = out.stdout, out.stderr
 
         if self.err:
             LOG.debug('an err: %s', self.err)

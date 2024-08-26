@@ -35,11 +35,10 @@ are seen on a listing.
 
 While copying from filesystem to disk image, filename conversion will be done:
 
-1. Every ``$`` and ``*`` characters will be replaced by question mark (``?``)
-2. Every pipe (``|``) and backslash (``\``) characters will be replaced by
-   slash (``/``)
-3. Every tilde (``~``) will be replaced by a space
-4. ``prg`` extension will be truncated
+1. Every ``$`` and ``*`` characters will be replaced by question mark (``?``).
+2. Every pipe (``|``) and backslash (``\\``) characters will be replaced by
+   slash (``/``).
+3. ``prg`` extension will be truncated.
 
 Representation of a directory can be sometimes confusing - in case when one
 copied file without extension it stays there in such form, till next access
